@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'item_list' %}">Directory</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-dark text-white p-4">
+                <div class="d-flex align-items-center">
+                    <span class="bg-primary text-white p-3 rounded-3 me-3 fs-4">
+                        <i class="bi bi-{% if 'Update' in title %}pencil-square{% else %}plus-circle{% endif %}"></i>
+                    </span>
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ title }}</h4>
+                        <p class="text-light text-opacity-75 small mb-0">
+                            Enter accurate item details to help our AI matching algorithm find matching items across campus.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- AI matching notice -->
+                <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center">
+                    <i class="bi bi-cpu fs-4 text-primary me-3"></i>
+                    <div class="small">
+                        <strong>Smart Matching Enabled:</strong> As soon as you publish this item, the AI matching system analyzes its title, description, category, and location against corresponding listings.
+                    </div>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information Section -->
+                    <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                        <i class="bi bi-info-circle text-primary me-2"></i>Item Overview
+                    </h5>
+                    
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="id_title" class="form-label fw-semibold">Item Title <span class="text-danger">*</span></label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small">Use a clear, specific name (e.g., "Silver Dell Inspiron 15" or "Black Leather Titan Wallet").</div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label fw-semibold">Detailed Description <span class="text-danger">*</span></label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small">Describe distinguishing marks, model numbers, stickers, colors, scratches, or accessories.</div>
+                    </div>
+                    
+                    <!-- Category and Status Row -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="id_category" class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_status" class="form-label fw-semibold">Listing Status <span class="text-danger">*</span></label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload -->
+                    <div class="mb-4">
+                        <label for="id_image" class="form-label fw-semibold">Item Photo (Optional but Recommended)</label>
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                            <div class="invalid-feedback d-block">{{ form.image.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small">Upload JPG, PNG, or AVIF (maximum file size 5MB). Images improve match accuracy.</div>
+                        {% if form.instance.image %}
+                            <div class="mt-2 p-2 bg-light rounded border d-inline-block">
+                                <small class="text-muted d-block mb-1">Current Image:</small>
+                                <img src="{{ form.instance.image.url }}" alt="Current" class="rounded" style="max-height: 100px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Location & Date Section -->
+                    <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                        <i class="bi bi-geo-alt text-danger me-2"></i>Location & Timing
+                    </h5>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="id_location" class="form-label fw-semibold">Campus Location <span class="text-danger">*</span></label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="invalid-feedback d-block">{{ form.location.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">e.g., "Central Library 1st Floor", "Sports Complex", "Cafeteria"</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_date_lost_found" class="form-label fw-semibold">Date Lost or Found <span class="text-danger">*</span></label>
+                            {{ form.date_lost_found }}
+                            {% if form.date_lost_found.errors %}
+                                <div class="invalid-feedback d-block">{{ form.date_lost_found.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Information Section -->
+                    <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                        <i class="bi bi-person-lines-fill text-primary me-2"></i>Contact Details
+                    </h5>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="id_contact_email" class="form-label fw-semibold">Contact Email <span class="text-danger">*</span></label>
+                            {{ form.contact_email }}
+                            {% if form.contact_email.errors %}
+                                <div class="invalid-feedback d-block">{{ form.contact_email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_contact_phone" class="form-label fw-semibold">Contact Phone (Optional)</label>
+                            {{ form.contact_phone }}
+                            {% if form.contact_phone.errors %}
+                                <div class="invalid-feedback d-block">{{ form.contact_phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'item_list' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check2-circle me-1"></i>{{ button_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

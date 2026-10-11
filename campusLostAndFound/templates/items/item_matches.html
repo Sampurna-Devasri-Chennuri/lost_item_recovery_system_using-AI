@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Match Breakdown: {{ item.title }} | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'item_detail' item.pk %}">{{ item.title }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">AI Matches Hub</li>
+    </ol>
+</nav>
+
+<div class="card shadow-sm border-0 mb-4 bg-dark text-white">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-info text-dark px-3 py-2 mb-2">
+                    <i class="bi bi-cpu me-1"></i> Academic AI Engine Analysis
+                </span>
+                <h2 class="fw-bold mb-1">AI Match Hub & Feature Breakdown</h2>
+                <p class="text-light text-opacity-75 mb-0 small">
+                    Candidate items ranked using TF-IDF n-gram vectorization, Cosine Similarity, categorical clustering, location token proximity, and normalized RGB color distribution analysis.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'item_detail' item.pk %}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Item Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Reference Item Card -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border sticky-top" style="top: 80px;">
+            <div class="card-header bg-light">
+                <small class="text-muted text-uppercase fw-bold">Source Reference Item</small>
+            </div>
+            {% if item.image %}
+                <img src="{{ item.image.url }}" class="card-img-top item-image" alt="{{ item.title }}">
+            {% else %}
+                <div class="card-img-top item-image-placeholder">
+                    <i class="bi {{ item.category_icon }} display-4"></i>
+                </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge {{ item.status_badge_class }}">{{ item.get_status_display }}</span>
+                    <span class="badge bg-light text-dark border">{{ item.get_category_display }}</span>
+                </div>
+                <h5 class="fw-bold text-dark">{{ item.title }}</h5>
+                <p class="text-muted small mb-3">{{ item.description }}</p>
+                <div class="border-top pt-2 small text-muted">
+                    <div><i class="bi bi-geo-alt text-danger me-1"></i><strong>Location:</strong> {{ item.location }}</div>
+                    <div><i class="bi bi-calendar me-1"></i><strong>Date:</strong> {{ item.date_lost_found|date:"M d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranked Matches Column -->
+    <div class="col-lg-8">
+        <h4 class="fw-bold text-dark mb-3">
+            Ranked Candidate Matches ({{ matches|length }})
+        </h4>
+
+        {% if matches %}
+            <div class="d-flex flex-column gap-4">
+                {% for match in matches %}
+                    <div class="card shadow-sm border border-opacity-50 {% if match.similarity_score >= 70 %}border-success{% elif match.similarity_score >= 40 %}border-primary{% else %}border-secondary{% endif %}">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge {% if match.similarity_score >= 70 %}bg-success{% elif match.similarity_score >= 40 %}bg-primary{% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+                                    {{ match.similarity_score|floatformat:1 }}% Overall Similarity
+                                </span>
+                            </div>
+                            <span class="badge {{ match.item.status_badge_class }}">
+                                {{ match.item.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Matched Item Thumbnail & Info -->
+                                <div class="col-md-5">
+                                    {% if match.item.image %}
+                                        <img src="{{ match.item.image.url }}" class="img-fluid rounded mb-2 w-100" style="height: 160px; object-fit: cover;" alt="{{ match.item.title }}">
+                                    {% else %}
+                                        <div class="rounded bg-light d-flex align-items-center justify-content-center mb-2" style="height: 160px;">
+                                            <i class="bi {{ match.item.category_icon }} text-muted display-4"></i>
+                                        </div>
+                                    {% endif %}
+                                    <h5 class="fw-bold mb-1">{{ match.item.title }}</h5>
+                                    <p class="text-muted small mb-2">{{ match.item.description|truncatechars:85 }}</p>
+                                    <div class="small text-muted">
+                                        <div><i class="bi bi-geo-alt text-danger me-1"></i>{{ match.item.location }}</div>
+                                        <div><i class="bi bi-calendar me-1"></i>{{ match.item.date_lost_found|date:"M d, Y" }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Component Scores & Explanations -->
+                                <div class="col-md-7 border-start">
+                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up me-1 text-primary"></i>Signal Contribution Breakdown</h6>
+                                    
+                                    <!-- Text Similarity -->
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Text Similarity (Title & Description TF-IDF)</span>
+                                            <span class="fw-bold">{{ match.text_score|floatformat:1 }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ match.text_score }}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Category Alignment -->
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Category Alignment</span>
+                                            <span class="fw-bold">{{ match.category_score|floatformat:1 }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ match.category_score }}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Location Proximity -->
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Location Proximity</span>
+                                            <span class="fw-bold">{{ match.location_score|floatformat:1 }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ match.location_score }}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Visual Image Similarity -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Visual Image Color Match</span>
+                                            <span class="fw-bold">{% if match.image_score %}{{ match.image_score|floatformat:1 }}%{% else %}N/A{% endif %}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ match.image_score|default:0 }}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Explainable Reasoning -->
+                                    <div class="p-2 bg-light rounded small border">
+                                        <strong><i class="bi bi-lightbulb text-warning me-1"></i>Algorithm Explanation:</strong>
+                                        <div class="text-muted mt-1">{{ match.explanation }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center">
+                            <a href="{% url 'item_detail' match.item.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-eye me-1"></i>Inspect Full Listing
+                            </a>
+                            {% if user.is_authenticated and user != match.item.posted_by %}
+                                <a href="{% url 'submit_claim' match.item.pk %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-shield-check me-1"></i>Initiate Claim on This Item
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-5 text-center bg-white rounded-4 border">
+                <i class="bi bi-search display-3 text-muted mb-3 d-block"></i>
+                <h5 class="fw-bold text-dark">No Candidate Matches Detected Yet</h5>
+                <p class="text-muted small" style="max-width: 500px; margin: 0 auto;">
+                    Currently, no opposite-status listings meet the minimum similarity threshold. When new items are added to the directory, they will be evaluated and linked automatically.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

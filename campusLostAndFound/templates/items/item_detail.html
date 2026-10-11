@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }} | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'item_list' %}">Directory</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ item.title }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <!-- Main Item Details Column -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <!-- Large Image Preview -->
+            {% if item.image %}
+                <div class="position-relative bg-dark text-center" style="max-height: 440px; overflow: hidden;">
+                    <img src="{{ item.image.url }}" class="img-fluid" alt="{{ item.title }}" style="max-height: 440px; width: 100%; object-fit: contain;">
+                </div>
+            {% else %}
+                <div class="p-5 text-center bg-light border-bottom">
+                    <i class="bi {{ item.category_icon }} text-muted" style="font-size: 5rem;"></i>
+                    <p class="text-muted small mt-2 mb-0">No photograph uploaded for this listing</p>
+                </div>
+            {% endif %}
+            
+            <div class="card-body p-4">
+                <!-- Status Badges & Owner Action Controls -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge {{ item.status_badge_class }} fs-6 px-3 py-2">
+                            <i class="bi bi-{% if item.status == 'lost' %}exclamation-octagon{% else %}check2-circle{% endif %} me-1"></i>
+                            {{ item.get_status_display }}
+                        </span>
+                        <span class="badge bg-light text-dark border fs-6 px-3 py-2">
+                            <i class="bi {{ item.category_icon }} me-1"></i>{{ item.get_category_display }}
+                        </span>
+                        {% if item.is_resolved %}
+                            <span class="badge bg-success fs-6 px-3 py-2">
+                                <i class="bi bi-patch-check-fill me-1"></i>Item Recovered
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if is_owner %}
+                        <div class="btn-group">
+                            <a href="{% url 'item_update' item.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </a>
+                            <a href="{% url 'item_delete' item.pk %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </a>
+                            <a href="{% url 'mark_resolved' item.pk %}" class="btn btn-sm {% if item.is_resolved %}btn-outline-secondary{% else %}btn-success{% endif %}">
+                                <i class="bi bi-check2-all me-1"></i>{% if item.is_resolved %}Reopen Listing{% else %}Mark as Recovered{% endif %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Item Title -->
+                <h2 class="fw-bold text-dark mb-3">{{ item.title }}</h2>
+                
+                <!-- Metadata Grid -->
+                <div class="row g-3 py-3 my-2 bg-light rounded-3 border">
+                    <div class="col-sm-6 col-md-3">
+                        <small class="text-muted d-block"><i class="bi bi-geo-alt text-danger me-1"></i>Location</small>
+                        <span class="fw-semibold text-dark">{{ item.location }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <small class="text-muted d-block"><i class="bi bi-calendar-event text-primary me-1"></i>Date {{ item.get_status_display }}</small>
+                        <span class="fw-semibold text-dark">{{ item.date_lost_found|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <small class="text-muted d-block"><i class="bi bi-person text-secondary me-1"></i>Reported By</small>
+                        <span class="fw-semibold text-dark">{{ item.posted_by.get_full_name|default:item.posted_by.username }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <small class="text-muted d-block"><i class="bi bi-clock-history text-secondary me-1"></i>Posted On</small>
+                        <span class="fw-semibold text-dark">{{ item.created_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="mt-4">
+                    <h5 class="fw-bold text-dark mb-2">Item Description</h5>
+                    <p class="text-secondary lead fs-6" style="white-space: pre-line;">{{ item.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Claims Section for Owner -->
+        {% if is_owner and claims_received %}
+            <div class="card shadow-sm border-warning mb-4">
+                <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark">
+                        <i class="bi bi-shield-check me-2 text-warning"></i>Claims Filed for This Item ({{ claims_received.count }})
+                    </span>
+                    <a href="{% url 'my_claims' %}" class="small text-decoration-none">Manage All Claims</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for claim in claims_received %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge {{ claim.status_badge_class }} me-2">{{ claim.get_status_display }}</span>
+                                        <strong>Claimant: {{ claim.claimant.get_full_name|default:claim.claimant.username }}</strong>
+                                    </div>
+                                    <small class="text-muted">{{ claim.created_at|date:"M d, Y" }}</small>
+                                </div>
+                                <p class="small text-muted mb-2"><strong>Proof submitted:</strong> {{ claim.proof_details|truncatechars:140 }}</p>
+                                <div class="text-end">
+                                    <a href="{% url 'claim_detail' claim.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>Review Proof & Details
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar / Action & AI Matches Column -->
+    <div class="col-lg-4">
+        <!-- Claim Status Card for Claimant -->
+        {% if user_claim %}
+            <div class="card shadow-sm mb-4 border-info">
+                <div class="card-header bg-info bg-opacity-10 fw-bold text-dark">
+                    <i class="bi bi-info-circle text-info me-2"></i>Your Claim Status
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Current Status:</span>
+                        <span class="badge {{ user_claim.status_badge_class }} fs-6">{{ user_claim.get_status_display }}</span>
+                    </div>
+                    <p class="small text-muted mb-3">Submitted on {{ user_claim.created_at|date:"M d, Y" }}</p>
+                    {% if user_claim.owner_notes %}
+                        <div class="p-2 bg-light rounded small mb-3">
+                            <strong>Note from poster:</strong> {{ user_claim.owner_notes }}
+                        </div>
+                    {% endif %}
+                    <a href="{% url 'claim_detail' user_claim.pk %}" class="btn btn-outline-info w-100 btn-sm">
+                        View Claim Tracking
+                    </a>
+                </div>
+            </div>
+        {% elif not is_owner and not item.is_resolved %}
+            <!-- Action Card to File Claim -->
+            <div class="card shadow-sm mb-4 border-primary">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="bi bi-shield-check me-2"></i>Is This Your Item?
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        If you believe this item belongs to you, submit an official recovery claim with proof of ownership (serial numbers, distinguishing marks, etc.).
+                    </p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'submit_claim' item.pk %}" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-file-earmark-check me-1"></i>File Ownership Claim
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login to Claim
+                        </a>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-outline-secondary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#contactModal">
+                        <i class="bi bi-envelope me-1"></i>View Contact Info
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- AI Suggested Matches Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cpu text-info me-2"></i>AI Candidate Matches</span>
+                <a href="{% url 'item_matches' item.pk %}" class="badge bg-primary text-decoration-none text-white">Full Hub</a>
+            </div>
+            <div class="card-body p-0">
+                {% if matches %}
+                    <div class="list-group list-group-flush">
+                        {% for match in matches %}
+                            <a href="{% url 'item_detail' match.item.pk %}" class="list-group-item list-group-item-action p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 fw-bold text-dark">{{ match.item.title|truncatechars:24 }}</h6>
+                                    <span class="badge {% if match.similarity_score >= 70 %}bg-success{% elif match.similarity_score >= 40 %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ match.similarity_score|floatformat:1 }}% Match
+                                    </span>
+                                </div>
+                                <div class="match-meter my-2">
+                                    <div class="match-meter-fill" style="width: {{ match.similarity_score }}%;"></div>
+                                </div>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ match.item.location|truncatechars:22 }} &bull; {{ match.item.date_lost_found|date:"M d" }}
+                                </small>
+                                <small class="text-secondary d-block mt-1 fst-italic">
+                                    {{ match.explanation|truncatechars:60 }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center">
+                        <i class="bi bi-search text-muted display-6 mb-2 d-block"></i>
+                        <p class="text-muted small mb-0">No opposite-status matches found above threshold yet. The engine continues indexing new reports.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-light p-3 text-center border-top">
+                <a href="{% url 'item_matches' item.pk %}" class="btn btn-sm btn-outline-dark w-100">
+                    <i class="bi bi-speedometer me-1"></i>Compare Breakdown & Features
+                </a>
+            </div>
+        </div>
+        
+        <!-- Back Button -->
+        <a href="{% url 'item_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-arrow-left me-1"></i>Back to Directory
+        </a>
+    </div>
+</div>
+
+<!-- Contact Information Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="contactModalLabel">
+                    <i class="bi bi-person-lines-fill me-2 text-primary"></i>Poster Contact Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    Contact the person who listed this item to coordinate queries. For security and formal records, we recommend also submitting an ownership claim.
+                </p>
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <small class="text-muted d-block">Email Address</small>
+                    <a href="mailto:{{ item.contact_email }}?subject=Regarding your {{ item.get_status_display }} item: {{ item.title }}" class="fw-bold text-decoration-none">
+                        {{ item.contact_email }}
+                    </a>
+                </div>
+                {% if item.contact_phone %}
+                    <div class="p-3 bg-light rounded-3 border">
+                        <small class="text-muted d-block">Phone Number</small>
+                        <a href="tel:{{ item.contact_phone }}" class="fw-bold text-decoration-none">
+                            {{ item.contact_phone }}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="mailto:{{ item.contact_email }}?subject=Regarding your {{ item.get_status_display }} item: {{ item.title }}" class="btn btn-primary">
+                    <i class="bi bi-envelope me-1"></i>Email Directly
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

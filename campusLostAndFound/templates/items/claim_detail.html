@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Claim #{{ claim.id }}: {{ claim.item.title }} | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'my_claims' %}">Claims</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Claim #{{ claim.id }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <!-- Left Column: Claim Details -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-3">
+                <span class="fw-bold">
+                    <i class="bi bi-shield-check me-2 text-primary"></i>Claim Request #{{ claim.id }}
+                </span>
+                <span class="badge {{ claim.status_badge_class }} fs-6">
+                    {{ claim.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body p-4">
+                <!-- Item Reference -->
+                <div class="d-flex align-items-center p-3 bg-light rounded-3 mb-4 border">
+                    {% if claim.item.image %}
+                        <img src="{{ claim.item.image.url }}" class="rounded me-3" style="width: 70px; height: 70px; object-fit: cover;" alt="{{ claim.item.title }}">
+                    {% else %}
+                        <div class="rounded bg-light border d-flex align-items-center justify-content-center me-3" style="width: 70px; height: 70px;">
+                            <i class="bi {{ claim.item.category_icon }} text-muted fs-2"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Target Listed Item</small>
+                        <h5 class="fw-bold mb-1">
+                            <a href="{% url 'item_detail' claim.item.pk %}" class="text-decoration-none text-dark">
+                                {{ claim.item.title }}
+                            </a>
+                        </h5>
+                        <div class="small text-muted">
+                            <span class="badge {{ claim.item.status_badge_class }} me-1">{{ claim.item.get_status_display }}</span>
+                            Location: {{ claim.item.location }} &bull; Reported by {{ claim.item.posted_by.username }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proof of Ownership Details -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text text-primary me-2"></i>Ownership Proof Submitted by Claimant</h6>
+                    <div class="p-3 bg-light rounded-3 border text-secondary" style="white-space: pre-line;">
+                        {{ claim.proof_details }}
+                    </div>
+                </div>
+
+                {% if claim.matched_item %}
+                    <!-- Linked Item from Claimant -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-link-45deg text-primary me-2"></i>Linked Counterpart Listing</h6>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <strong>{{ claim.matched_item.title }}</strong> ({{ claim.matched_item.get_status_display }})
+                            <div class="small text-muted">Location: {{ claim.matched_item.location }} &bull; Date: {{ claim.matched_item.date_lost_found|date:"M d, Y" }}</div>
+                            <a href="{% url 'item_detail' claim.matched_item.pk %}" class="small text-primary mt-1 d-inline-block">View counterpart listing &rarr;</a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Notes from Item Owner / Finder -->
+                {% if claim.owner_notes %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-quote text-success me-2"></i>Response from Item Poster</h6>
+                        <div class="p-3 rounded-3 border {% if claim.status == 'approved' %}bg-success bg-opacity-10 border-success{% elif claim.status == 'rejected' %}bg-danger bg-opacity-10 border-danger{% else %}bg-light{% endif %}">
+                            {{ claim.owner_notes }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Contact & Timestamp Metadata -->
+                <div class="row g-3 py-3 border-top small text-muted">
+                    <div class="col-sm-6">
+                        <strong>Claimant:</strong> {{ claim.claimant.get_full_name|default:claim.claimant.username }} ({{ claim.contact_email }})
+                        {% if claim.contact_phone %}
+                            <div><strong>Phone:</strong> {{ claim.contact_phone }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <div><strong>Submitted:</strong> {{ claim.created_at|date:"M d, Y h:i A" }}</div>
+                        {% if claim.resolved_at %}
+                            <div><strong>Reviewed:</strong> {{ claim.resolved_at|date:"M d, Y h:i A" }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Status & Owner Review Form -->
+    <div class="col-lg-5">
+        {% if is_owner and claim.status == 'pending' %}
+            <!-- Review Claim Panel for Item Poster -->
+            <div class="card shadow-sm border-warning mb-4">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="bi bi-person-check me-2"></i>Review & Respond to Claim
+                </div>
+                <div class="card-body p-4">
+                    <p class="small text-muted mb-3">
+                        As the person who reported this item, review the claimant's proof. If it matches, approve the claim to coordinate physical return.
+                    </p>
+
+                    <form method="POST" action="{% url 'review_claim' claim.pk %}">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Notes / Handover Instructions</label>
+                            <textarea name="owner_notes" class="form-control" rows="3" placeholder="Provide instructions for physical verification (e.g. 'Meet me at Security Desk between 2-4 PM with Student ID')..."></textarea>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" name="mark_recovered" value="1" id="markRecoveredCheck" checked>
+                            <label class="form-check-label small" for="markRecoveredCheck">
+                                Also mark the item as <strong>Resolved / Recovered</strong> in the directory upon approving.
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>Approve Claim & Confirm Ownership
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-x-circle me-1"></i>Reject Claim (Proof Insufficient)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% elif is_owner and claim.status != 'pending' %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4 text-center">
+                    <i class="bi bi-check2-circle text-success display-4 mb-2 d-block"></i>
+                    <h5 class="fw-bold">Claim Has Been Reviewed</h5>
+                    <p class="small text-muted mb-0">Status: <span class="badge {{ claim.status_badge_class }}">{{ claim.get_status_display }}</span></p>
+                </div>
+            </div>
+        {% else %}
+            <!-- Claimant Status Information Box -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light fw-bold">
+                    <i class="bi bi-info-circle text-primary me-2"></i>What Happens Next?
+                </div>
+                <div class="card-body p-4">
+                    {% if claim.status == 'pending' %}
+                        <p class="small text-muted mb-3">
+                            Your claim has been submitted to the listing poster. Once they review your proof, you will receive an in-app notification with their confirmation or response.
+                        </p>
+                        <div class="alert alert-warning small mb-0">
+                            <i class="bi bi-clock me-1"></i> Awaiting verification from {{ claim.item.posted_by.username }}.
+                        </div>
+                    {% elif claim.status == 'approved' %}
+                        <div class="alert alert-success mb-3">
+                            <i class="bi bi-check-circle-fill me-1"></i> <strong>Claim Approved!</strong>
+                            <p class="small mb-0 mt-1">The poster verified your ownership. Use the contact details below to meet up and collect your item.</p>
+                        </div>
+                        <div class="p-3 bg-light rounded border small">
+                            <strong>Poster Contact:</strong>
+                            <div>Email: <a href="mailto:{{ claim.item.contact_email }}">{{ claim.item.contact_email }}</a></div>
+                            {% if claim.item.contact_phone %}
+                                <div>Phone: <a href="tel:{{ claim.item.contact_phone }}">{{ claim.item.contact_phone }}</a></div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger mb-0 small">
+                            <i class="bi bi-x-circle me-1"></i> This claim was rejected. Please review the poster notes or contact support if this was in error.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="d-grid">
+            <a href="{% url 'my_claims' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to My Claims
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <!-- Login Card -->
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <!-- Card Header -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-circle display-4 text-primary"></i>
+                    <h2 class="mt-2">Welcome Back</h2>
+                    <p class="text-muted">Sign in to your account</p>
+                </div>
+                
+                <!-- Login Form -->
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <!-- Username Field -->
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" 
+                                   name="username" 
+                                   id="id_username" 
+                                   class="form-control {% if form.errors %}is-invalid{% endif %}" 
+                                   placeholder="Enter your username"
+                                   required 
+                                   autofocus>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" 
+                                   name="password" 
+                                   id="id_password" 
+                                   class="form-control {% if form.errors %}is-invalid{% endif %}" 
+                                   placeholder="Enter your password"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Messages -->
+                    {% if form.errors %}
+                        <div class="alert alert-danger py-2">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Invalid username or password. Please try again.
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Remember Me Checkbox -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember me</label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Divider -->
+                <hr class="my-4">
+                
+                <!-- Sign Up Link -->
+                <div class="text-center">
+                    <p class="mb-0">
+                        Don't have an account? 
+                        <a href="{% url 'register' %}" class="text-decoration-none">
+                            Sign up here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="card mt-3 border-0 bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-info-circle text-primary me-2"></i>
+                <small class="text-muted">
+                    Use your campus credentials to login and report lost or found items.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

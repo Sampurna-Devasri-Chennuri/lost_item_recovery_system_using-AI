@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: campus-lost-and-found
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "cd campusLostAndFound && gunicorn campusLostAndFound.wsgi:application --bind 0.0.0.0:$PORT"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: TIME_ZONE
+        value: "Asia/Kolkata"

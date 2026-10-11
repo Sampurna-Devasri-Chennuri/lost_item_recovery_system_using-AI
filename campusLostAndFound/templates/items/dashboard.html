@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | Campus AI Lost-Item Recovery Portal{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-banner">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25 px-3 py-2 mb-3">
+                    <i class="bi bi-cpu me-1"></i> AI-Powered Campus Recovery
+                </span>
+                <h1 class="display-5 fw-bold mb-3 tracking-tight">
+                    Recover Lost Campus Belongings Fast
+                </h1>
+                <p class="lead text-light text-opacity-75 mb-4" style="max-width: 650px;">
+                    Report lost or found possessions across campus. Our hybrid AI matching engine analyzes titles, descriptions, categories, locations, and image color distributions to instantly suggest potential matches.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{% url 'item_create' %}" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="bi bi-plus-circle me-2"></i>Report an Item
+                    </a>
+                    <a href="{% url 'item_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-search me-2"></i>Search Directory
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <div class="p-4 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-10 backdrop-blur">
+                    <i class="bi bi-radar display-1 text-info mb-3"></i>
+                    <h5 class="text-white mb-1">Smart Recovery Hub</h5>
+                    <p class="small text-light text-opacity-75 mb-0">Automated similarity indexing connects finders with rightful owners.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- KPI Metrics Section -->
+<section class="py-4 bg-white border-bottom">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-light border text-center">
+                    <div class="text-secondary small fw-semibold text-uppercase">Total Reported</div>
+                    <div class="h2 fw-bold text-dark mb-0">{{ total_items }}</div>
+                    <small class="text-muted"><i class="bi bi-database me-1"></i>Database items</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 text-center">
+                    <div class="text-danger small fw-semibold text-uppercase">Active Lost Items</div>
+                    <div class="h2 fw-bold text-danger mb-0">{{ total_lost }}</div>
+                    <small class="text-muted"><i class="bi bi-exclamation-circle me-1"></i>Seeking owners</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25 text-center">
+                    <div class="text-success small fw-semibold text-uppercase">Active Found Items</div>
+                    <div class="h2 fw-bold text-success mb-0">{{ total_found }}</div>
+                    <small class="text-muted"><i class="bi bi-check-circle me-1"></i>Awaiting claim</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 text-center">
+                    <div class="text-primary small fw-semibold text-uppercase">Items Reunited</div>
+                    <div class="h2 fw-bold text-primary mb-0">{{ total_resolved }}</div>
+                    <small class="text-muted"><i class="bi bi-patch-check me-1"></i>Successfully recovered</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Container for Logged-In User Hub & Recent Listings -->
+<div class="container py-4">
+    {% if user.is_authenticated %}
+        <!-- Personalized User Activity Center -->
+        <div class="card mb-5 border-primary border-opacity-25 shadow-sm">
+            <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-primary">
+                    <i class="bi bi-person-gear me-2"></i>Activity Dashboard &bull; {{ user.get_full_name|default:user.username }}
+                </span>
+                <div>
+                    <a href="{% url 'my_items' %}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="bi bi-collection me-1"></i>My Items ({{ my_items_count }})
+                    </a>
+                    <a href="{% url 'my_claims' %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-shield-check me-1"></i>Claims Center
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <!-- Potential AI Matches for User -->
+                    <div class="col-lg-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-cpu text-info me-2"></i>AI Matches For Your Items
+                                {% if user_matches_count > 0 %}
+                                    <span class="badge bg-info text-dark ms-1">{{ user_matches_count }}</span>
+                                {% endif %}
+                            </h6>
+                        </div>
+                        {% if user_matches %}
+                            <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                {% for match in user_matches %}
+                                    <div class="list-group-item p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <span class="badge {% if match.similarity_score >= 70 %}bg-success{% elif match.similarity_score >= 40 %}bg-primary{% else %}bg-secondary{% endif %}">
+                                                {{ match.similarity_score|floatformat:1 }}% Match
+                                            </span>
+                                            <small class="text-muted">{{ match.created_at|date:"M d, Y" }}</small>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="fw-semibold text-dark">
+                                                    {{ match.lost_item.title }} <span class="text-muted">↔</span> {{ match.found_item.title }}
+                                                </div>
+                                                <small class="text-muted d-block">{{ match.explanation|truncatechars:65 }}</small>
+                                            </div>
+                                            <div class="ms-2">
+                                                <a href="{% url 'item_detail' match.found_item.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="p-4 bg-light rounded-3 text-center border">
+                                <i class="bi bi-check2-circle text-muted fs-3"></i>
+                                <p class="text-muted small mb-0 mt-1">No AI matches detected yet for your active listings. Newly reported items will be compared automatically.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Pending Claims Requiring Review -->
+                    <div class="col-lg-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-shield-exclamation text-warning me-2"></i>Pending Claims to Review
+                                {% if pending_incoming_claims %}
+                                    <span class="badge bg-warning text-dark ms-1">{{ pending_incoming_claims.count }}</span>
+                                {% endif %}
+                            </h6>
+                            <a href="{% url 'my_claims' %}" class="small text-decoration-none">View All</a>
+                        </div>
+                        {% if pending_incoming_claims %}
+                            <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                {% for claim in pending_incoming_claims %}
+                                    <div class="list-group-item p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <span class="badge bg-warning text-dark">Pending Review</span>
+                                            <small class="text-muted">{{ claim.created_at|timesince }} ago</small>
+                                        </div>
+                                        <div class="fw-semibold text-dark">{{ claim.item.title }}</div>
+                                        <small class="text-muted d-block">Claimed by {{ claim.claimant.username }}: "{{ claim.proof_details|truncatechars:50 }}"</small>
+                                        <div class="mt-2 text-end">
+                                            <a href="{% url 'claim_detail' claim.pk %}" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-eye me-1"></i>Review Proof & Respond
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="p-4 bg-light rounded-3 text-center border">
+                                <i class="bi bi-shield-check text-success fs-3"></i>
+                                <p class="text-muted small mb-0 mt-1">No pending claim requests on your reported items right now.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recently Lost Items Section -->
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-exclamation-octagon text-danger me-2"></i>Recently Lost Items
+                </h4>
+                <p class="text-muted small mb-0">Help fellow campus members locate these missing items</p>
+            </div>
+            <a href="{% url 'lost_items' %}" class="btn btn-outline-danger btn-sm">
+                View All Lost ({{ total_lost }}) <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="row g-4">
+            {% for item in recent_lost %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 card-hover">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" class="card-img-top item-image" alt="{{ item.title }}">
+                        {% else %}
+                            <div class="card-img-top item-image-placeholder">
+                                <i class="bi {{ item.category_icon }} display-4"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-danger">Lost</span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi {{ item.category_icon }} me-1"></i>{{ item.get_category_display }}
+                                </span>
+                            </div>
+                            <h5 class="card-title fw-bold text-dark mb-1">
+                                <a href="{% url 'item_detail' item.pk %}" class="text-decoration-none text-dark">
+                                    {{ item.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small flex-grow-1">
+                                {{ item.description|truncatechars:90 }}
+                            </p>
+                            <div class="border-top pt-2 mt-2">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span><i class="bi bi-geo-alt text-danger me-1"></i>{{ item.location|truncatechars:20 }}</span>
+                                    <span><i class="bi bi-calendar3 me-1"></i>{{ item.date_lost_found|date:"M d" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'item_detail' item.pk %}" class="btn btn-sm btn-outline-danger">
+                                    View Details & Matches
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="p-4 text-center bg-white rounded-3 border">
+                        <p class="text-muted mb-0">No active lost items reported at this moment.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recently Found Items Section -->
+    <div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-check2-circle text-success me-2"></i>Recently Found Items
+                </h4>
+                <p class="text-muted small mb-0">Items found and waiting to be claimed by their rightful owners</p>
+            </div>
+            <a href="{% url 'found_items' %}" class="btn btn-outline-success btn-sm">
+                View All Found ({{ total_found }}) <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="row g-4">
+            {% for item in recent_found %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 card-hover">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" class="card-img-top item-image" alt="{{ item.title }}">
+                        {% else %}
+                            <div class="card-img-top item-image-placeholder">
+                                <i class="bi {{ item.category_icon }} display-4"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-success">Found</span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi {{ item.category_icon }} me-1"></i>{{ item.get_category_display }}
+                                </span>
+                            </div>
+                            <h5 class="card-title fw-bold text-dark mb-1">
+                                <a href="{% url 'item_detail' item.pk %}" class="text-decoration-none text-dark">
+                                    {{ item.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small flex-grow-1">
+                                {{ item.description|truncatechars:90 }}
+                            </p>
+                            <div class="border-top pt-2 mt-2">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span><i class="bi bi-geo-alt text-success me-1"></i>{{ item.location|truncatechars:20 }}</span>
+                                    <span><i class="bi bi-calendar3 me-1"></i>{{ item.date_lost_found|date:"M d" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'item_detail' item.pk %}" class="btn btn-sm btn-outline-success">
+                                    View Details & Claim
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="p-4 text-center bg-white rounded-3 border">
+                        <p class="text-muted mb-0">No active found items reported at this moment.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

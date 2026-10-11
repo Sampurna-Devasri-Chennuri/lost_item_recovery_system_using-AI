@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">
+                    <i class="bi bi-bell text-info me-2"></i>In-App Notifications
+                </h3>
+                <p class="text-muted small mb-0">Updates on AI candidate matches, claim requests, and recovery status</p>
+            </div>
+            {% if notifications %}
+                <div class="mt-2 mt-md-0">
+                    <a href="{% url 'mark_all_notifications_read' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-check2-all me-1"></i>Mark All as Read
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                {% if notifications %}
+                    <div class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                            <div class="list-group-item p-3 d-flex justify-content-between align-items-center {% if not notification.is_read %}bg-light border-start border-4 border-primary{% endif %}">
+                                <div class="d-flex align-items-start">
+                                    <span class="fs-4 me-3">
+                                        <i class="bi {{ notification.icon_class }}"></i>
+                                    </span>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <h6 class="mb-0 fw-bold text-dark">{{ notification.title }}</h6>
+                                            {% if not notification.is_read %}
+                                                <span class="badge bg-primary" style="font-size: 0.65rem;">NEW</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted small mb-1">{{ notification.message }}</p>
+                                        <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ notification.created_at|timesince }} ago</small>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    {% if notification.link %}
+                                        <a href="{% url 'mark_notification_read' notification.pk %}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center">
+                        <i class="bi bi-bell-slash display-4 text-muted mb-2 d-block"></i>
+                        <h5 class="fw-bold text-dark">No Notifications</h5>
+                        <p class="text-muted small mb-0">You're all caught up! You will be notified when AI matches your items or claims are submitted.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
